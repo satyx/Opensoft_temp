@@ -61,23 +61,44 @@ def ActCitation(data):
     possible_act_citation = []
     for para in data[6:-1]:
         para = para.replace(',','')
-        act_containing_part = re.split(r' Act \d+',para)
-        all_acts_division.append(act_containing_part)
+        
+        act_containing_part1 = re.split(r' (?i)Act \d+',para)
+        pos1 = [[m.start() for m in re.finditer(' (?i)Act \d+', x)]
+        act_containing_part2 = re.split(r' (?i)Act of \d+',para)
+        pos2 = [[m.start() for m in re.finditer('(?i)Act of \d+', x)]
+       
+        #act_containing_part1.extend(act_containing_part2)
+        #all_acts_division.append(act_containing_part1)
     
-    for acts_in_para in all_acts_division:
+    
+    
+    possible_pos = []
+    for index,acts_in_para in enumerate(act_containing_part1[:-1]):
         for acts in acts_in_para[:-1]:
             if 'the' in acts:
                 possible_act_citation.append(acts.split(' the ')[-1].lower())
-                
-    possible_act_citation = list(set(possible_act_citation))
-    act_citation = []
+                possible_pos.append(pos1[index])
             
-    for a in possible_act_citation:
+                 
+    for index,acts_in_para in enumerate(act_containing_part2[:-1]):
+        for acts in acts_in_para[:-1]:
+            if 'the' in acts:
+                possible_act_citation.append(acts.split(' the ')[-1].lower())
+                possible_pos.append(pos2[index])
+            
+    possible_year = [para[i+5:i+9] for i in act_containing_part1]
+    possible_year.extend([para[i+8:i+12] for i in act_containing_part2])
+                
+    #possible_act_citation = list(set(possible_act_citation))
+    act_citation = []
+    year = []
+    for index,a in enumerate(possible_act_citation):
         for act in act_list:
-            if a in act:
+            if a in act and str(possible_year[index]) in act:
                 act_citation.append(a)
+                year.append(str(possible_year[index]))
                 break
-    return act_citation
+    return (act_citation,year_citation)
     
 def CaseCitation(data):
     case_id= []
@@ -305,9 +326,36 @@ with open('/home/satyx/opensoft_patel_hall/Data/doc_path_ttl_id.txt') as ids:
             id_case = [i.strip() for i in id_case]
             case[id_case[0]] = id_case[2]
             
-
+"""def get_number(x):
+    to_r = ''
+    for i in x:
+        if i.isdigit():
+            to_r=to_r+i
+    return int(to_r)'"""
 
 output={}
+
+yearwise_act_dic ={}
+
+
+
+with open('/home/satyx/opensoft_patel_hall/Data/Acts/all_acts_central_state.txt') as fl:
+    for row in fl:
+        row = row.rstrip('\n')
+        try:
+            x = re.findall(r'\d+',row)[-1]
+            print(x)
+        except:
+            continue
+        row = row.replace(x,'')
+        row = row.replace('\n','')
+        
+        try:
+            yearwise_act_dic[int(x)].append(row)
+        except:
+            yearwise_act_dic[int(x)] = [row]
+
+
 with open('meta_data1.json','w') as file_p:
     files = os.listdir('/home/satyx/opensoft_patel_hall/Data/All_FT')
     for File in files[:5]:
